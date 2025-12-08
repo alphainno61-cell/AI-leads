@@ -1,0 +1,454 @@
+/* DASHBOARD STYLES */
+.dashboard {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* QUICK ACTIONS */
+.quick-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* STATS GRID */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+.highlight-card {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.02) 100%);
+    border: 2px solid rgba(37, 99, 235, 0.1);
+}
+
+.stat-main {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.stat-number {
+    font-size: 48px;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-blue);
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.stat-label {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-600);
+    font-weight: var(--font-weight-semibold);
+}
+
+.stat-label-sm {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+}
+
+/* PROGRESS BAR */
+.progress-bar-container {
+    margin-bottom: var(--spacing-lg);
+}
+
+.progress-bar {
+    height: 12px;
+    background: var(--color-gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.progress-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+    text-align: center;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-gray-200);
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
+}
+
+/* LEAD BREAKDOWN */
+.stat-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.breakdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.breakdown-bar {
+    height: 8px;
+    background: var(--color-gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.breakdown-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease-in-out;
+}
+
+.breakdown-fill.validated {
+    background: var(--color-secondary-green);
+}
+
+.breakdown-fill.called {
+    background: var(--color-primary-blue);
+}
+
+.breakdown-fill.converted {
+    background: var(--color-warning);
+}
+
+.breakdown-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.breakdown-count {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+}
+
+.breakdown-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+}
+
+/* APPOINTMENTS */
+.appointment-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.appointment-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    background: var(--color-gray-50);
+}
+
+.appointment-icon {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.appointment-info {
+    flex: 1;
+}
+
+.appointment-number {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-blue);
+    line-height: 1;
+    margin-bottom: var(--spacing-xs);
+}
+
+.appointment-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+}
+
+.appointment-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--color-gray-300);
+}
+
+/* MAP CARD */
+.map-card {
+    grid-column: span 2;
+}
+
+.map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    min-height: 200px;
+}
+
+.map-icon {
+    font-size: 64px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.map-text {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-600);
+    margin-bottom: var(--spacing-lg);
+}
+
+.map-stats {
+    display: flex;
+    gap: var(--spacing-xl);
+}
+
+.map-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.map-stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+}
+
+.map-stat-value {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-blue);
+}
+
+/* ACTIVITIES */
+.activities-card {
+    margin-bottom: var(--spacing-xl);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.activity-item {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    background: var(--color-gray-50);
+    transition: all var(--transition-fast);
+}
+
+.activity-item:hover {
+    background: var(--color-gray-100);
+    transform: translateX(4px);
+}
+
+.activity-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.activity-indicator.success {
+    background: var(--color-secondary-green);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+}
+
+.activity-indicator.info {
+    background: var(--color-info);
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
+}
+
+.activity-indicator.warning {
+    background: var(--color-warning);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-message {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.activity-time {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+}
+
+/* METRICS GRID */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+.metric-card {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.metric-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.metric-icon.success {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.metric-icon.primary {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.metric-icon.warning {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.metric-icon.info {
+    background: rgba(6, 182, 212, 0.1);
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+    margin-bottom: var(--spacing-xs);
+}
+
+.metric-change {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+}
+
+.metric-change.positive {
+    color: var(--color-secondary-green);
+}
+
+.metric-change.negative {
+    color: var(--color-error);
+}
+
+.metric-change.neutral {
+    color: var(--color-gray-500);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+    .map-card {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .quick-actions {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .appointment-stats {
+        flex-direction: column;
+    }
+
+    .appointment-divider {
+        width: 100%;
+        height: 1px;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
