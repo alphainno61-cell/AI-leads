@@ -124,18 +124,63 @@ function LeadCollection() {
                                 <option value="canada">Canada</option>
                                 <option value="uk">United Kingdom</option>
                                 <option value="australia">Australia</option>
+                                <option value="bangladesh">Bangladesh</option>
                             </select>
                         </div>
 
                         {/* State Selection */}
                         <div className="input-group">
-                            <label className="input-label">State / Province</label>
+                            <label className="input-label">
+                                {selectedCountry === 'bangladesh' ? 'Division' : 'State / Province'}
+                            </label>
                             <select className="select" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
-                                <option value="">All States</option>
-                                <option value="ca">California</option>
-                                <option value="ny">New York</option>
-                                <option value="tx">Texas</option>
-                                <option value="fl">Florida</option>
+                                <option value="">
+                                    {selectedCountry === 'bangladesh' ? 'All Divisions' : 'All States'}
+                                </option>
+                                {selectedCountry === 'usa' && (
+                                    <>
+                                        <option value="ca">California</option>
+                                        <option value="ny">New York</option>
+                                        <option value="tx">Texas</option>
+                                        <option value="fl">Florida</option>
+                                    </>
+                                )}
+                                {selectedCountry === 'bangladesh' && (
+                                    <>
+                                        <option value="dhaka">Dhaka</option>
+                                        <option value="chittagong">Chittagong</option>
+                                        <option value="rajshahi">Rajshahi</option>
+                                        <option value="khulna">Khulna</option>
+                                        <option value="barisal">Barisal</option>
+                                        <option value="sylhet">Sylhet</option>
+                                        <option value="rangpur">Rangpur</option>
+                                        <option value="mymensingh">Mymensingh</option>
+                                    </>
+                                )}
+                                {selectedCountry === 'canada' && (
+                                    <>
+                                        <option value="on">Ontario</option>
+                                        <option value="qc">Quebec</option>
+                                        <option value="bc">British Columbia</option>
+                                        <option value="ab">Alberta</option>
+                                    </>
+                                )}
+                                {selectedCountry === 'uk' && (
+                                    <>
+                                        <option value="england">England</option>
+                                        <option value="scotland">Scotland</option>
+                                        <option value="wales">Wales</option>
+                                        <option value="ni">Northern Ireland</option>
+                                    </>
+                                )}
+                                {selectedCountry === 'australia' && (
+                                    <>
+                                        <option value="nsw">New South Wales</option>
+                                        <option value="vic">Victoria</option>
+                                        <option value="qld">Queensland</option>
+                                        <option value="wa">Western Australia</option>
+                                    </>
+                                )}
                             </select>
                         </div>
 

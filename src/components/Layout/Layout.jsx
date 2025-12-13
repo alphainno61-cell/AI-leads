@@ -40,7 +40,7 @@ function Layout({ children }) {
             <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                 <div className="sidebar-header">
                     <div className="logo">
-                        <div className="logo-icon">🤖</div>
+                        <img src="/logo.png" alt="Alpha Leads Logo" className="logo-icon" />
                         {sidebarOpen && <span className="logo-text">Alpha Leads</span>}
                     </div>
                 </div>
