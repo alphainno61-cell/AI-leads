@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Layout.css';
 
@@ -19,11 +19,20 @@ const Icons = {
 
 function Layout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [subMenuOpen, setSubMenuOpen] = useState({});
     const location = useLocation();
 
     const navItems = [
         { path: '/', label: 'Dashboard', icon: Icons.Dashboard },
-        { path: '/leads', label: 'Lead Collection', icon: Icons.Leads },
+        { 
+            path: '#', 
+            label: 'Leads Management', 
+            icon: Icons.Leads,
+            subItems: [
+                { path: '/leads/generate', label: 'Generate Leads', icon: '🔍' },
+                { path: '/leads/all', label: 'All Leads', icon: '📋' }
+            ]
+        },
         { path: '/calls', label: 'Call Automation', icon: Icons.Calls },
         { path: '/appointments', label: 'Appointments', icon: Icons.Appointments },
         { path: '/analytics', label: 'Analytics', icon: Icons.Analytics },
@@ -33,6 +42,29 @@ function Layout({ children }) {
     const isActive = (path) => {
         return location.pathname === path;
     };
+
+    const isSubActive = (parentPath) => {
+        return location.pathname.startsWith(parentPath) && location.pathname !== parentPath;
+    };
+
+    const toggleSubMenu = (path) => {
+        setSubMenuOpen(prev => ({
+            ...prev,
+            [path]: !prev[path]
+        }));
+    };
+
+    // Auto-open sub-menu if we're on a sub-route
+    useEffect(() => {
+        navItems.forEach(item => {
+            if (item.subItems && isSubActive(item.path)) {
+                setSubMenuOpen(prev => ({
+                    ...prev,
+                    [item.path]: true
+                }));
+            }
+        });
+    }, [location.pathname]);
 
     return (
         <div className="layout">
@@ -47,15 +79,58 @@ function Layout({ children }) {
 
                 <nav className="sidebar-nav">
                     {navItems.map((item) => (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-                            title={item.label}
-                        >
-                            <span className="nav-icon">{item.icon}</span>
-                            {sidebarOpen && <span className="nav-label">{item.label}</span>}
-                        </Link>
+                        <div key={item.path} className="nav-group">
+                            {item.subItems ? (
+                                <>
+                                    <div
+                                        className={`nav-item parent-nav ${isSubActive(item.path === '#' ? '/leads' : item.path) ? 'active' : ''}`}
+                                        onClick={() => toggleSubMenu(item.path)}
+                                        title={item.label}
+                                    >
+                                        {item.path === '#' ? (
+                                            <div className="nav-link-no-route">
+                                                <span className="nav-icon">{item.icon}</span>
+                                                {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                                            </div>
+                                        ) : (
+                                            <Link to={item.path} className="nav-link">
+                                                <span className="nav-icon">{item.icon}</span>
+                                                {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                                            </Link>
+                                        )}
+                                        {sidebarOpen && (
+                                            <span className={`submenu-arrow ${subMenuOpen[item.path] ? 'open' : ''}`}>
+                                                ▼
+                                            </span>
+                                        )}
+                                    </div>
+                                    {sidebarOpen && subMenuOpen[item.path] && (
+                                        <div className="submenu">
+                                            {item.subItems.map((subItem) => (
+                                                <Link
+                                                    key={subItem.path}
+                                                    to={subItem.path}
+                                                    className={`nav-item sub-nav-item ${isActive(subItem.path) ? 'active' : ''}`}
+                                                    title={subItem.label}
+                                                >
+                                                    <span className="nav-icon">{subItem.icon}</span>
+                                                    <span className="nav-label">{subItem.label}</span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Link
+                                    to={item.path}
+                                    className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                                    title={item.label}
+                                >
+                                    <span className="nav-icon">{item.icon}</span>
+                                    {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                                </Link>
+                            )}
+                        </div>
                     ))}
                 </nav>
 

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './LeadCollection.css';
+import RealLeadService from '../../services/RealLeadService';
 
 function LeadCollection() {
     const [selectedIndustry, setSelectedIndustry] = useState('real-estate');
@@ -8,45 +9,63 @@ function LeadCollection() {
     const [selectedCity, setSelectedCity] = useState('');
     const [isCollecting, setIsCollecting] = useState(false);
     const [collectionProgress, setCollectionProgress] = useState(0);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [deletedCount, setDeletedCount] = useState(0);
+    const [pendingDeleteLeads, setPendingDeleteLeads] = useState([]);
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [leadsPerPage] = useState(30);
+    const [useRealData, setUseRealData] = useState(false);
+    const [apiConnected, setApiConnected] = useState(false);
 
-    const [leads, setLeads] = useState([
-        {
-            id: 1,
-            businessName: 'Sunset Realty Group',
-            contactName: 'John Anderson',
-            phone: '+1 (555) 123-4567',
-            email: 'john@sunsetrealty.com',
-            location: 'Los Angeles, CA',
-            source: 'Google Places',
-            status: 'Validated',
-            confidence: 98,
-            selected: false
-        },
-        {
-            id: 2,
-            businessName: 'Prime Properties LLC',
-            contactName: 'Sarah Mitchell',
-            phone: '+1 (555) 234-5678',
-            email: 'sarah@primeproperties.com',
-            location: 'San Francisco, CA',
-            source: 'Google Places',
-            status: 'Validated',
-            confidence: 95,
-            selected: false
-        },
-        {
-            id: 3,
-            businessName: 'Metro Real Estate',
-            contactName: 'Michael Chen',
-            phone: '+1 (555) 345-6789',
-            email: 'michael@metrorealestate.com',
-            location: 'San Diego, CA',
-            source: 'Google Places',
-            status: 'Pending',
-            confidence: 87,
-            selected: false
+    // Initialize real lead service
+    const realLeadService = new RealLeadService();
+
+    // Load leads from localStorage on component mount
+    const [leads, setLeads] = useState(() => {
+        const savedLeads = localStorage.getItem('alphaLeads_generatedLeads');
+        if (savedLeads) {
+            const parsedLeads = JSON.parse(savedLeads);
+            // Reset all selections on page load/refresh
+            return parsedLeads.map(lead => ({
+                ...lead,
+                selected: false
+            }));
         }
-    ]);
+        return [];
+    });
+
+    // Save leads to localStorage whenever leads change
+    useEffect(() => {
+        localStorage.setItem('alphaLeads_generatedLeads', JSON.stringify(leads));
+    }, [leads]);
+
+    // Check API connection on component mount
+    useEffect(() => {
+        checkApiConnection();
+        checkApiStatus();
+    }, []);
+
+    const checkApiConnection = async () => {
+        const connected = await realLeadService.testConnection();
+        setApiConnected(connected);
+    };
+
+    const checkApiStatus = async () => {
+        try {
+            const status = await realLeadService.getApiStatus();
+            if (status.success) {
+                const hasFreeSources = status.summary.free_sources > 0;
+                setApiConnected(hasFreeSources);
+                if (hasFreeSources) {
+                    setUseRealData(true); // Auto-enable real data if free sources available
+                }
+            }
+        } catch (error) {
+            console.error('API status check failed:', error);
+        }
+    };
 
     const industries = [
         { value: 'real-estate', label: 'Real Estate' },
@@ -56,16 +75,133 @@ function LeadCollection() {
         { value: 'property-management', label: 'Property Management' }
     ];
 
-    const handleCollectLeads = () => {
+    // Generate sample leads based on selected filters
+    const generateNewLeads = () => {
+        const businessTypes = {
+            'real-estate': ['Realty', 'Real Estate', 'Properties', 'Homes', 'Land Co', 'Estate Group'],
+            'mortgage': ['Mortgage', 'Home Loans', 'Lending', 'Finance', 'Capital'],
+            'insurance': ['Insurance', 'Assurance', 'Protection', 'Coverage', 'Risk Management'],
+            'construction': ['Construction', 'Builders', 'Contractors', 'Development', 'Building Co'],
+            'property-management': ['Property Management', 'Rental Services', 'Property Care', 'Management Group']
+        };
+
+        const firstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'Robert', 'Jennifer', 'William', 'Amanda'];
+        const lastNames = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez'];
+        const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
+        const sources = ['Google Places', 'Yellow Pages', 'LinkedIn', 'Company Website', 'Business Directory'];
+        const statuses = ['Validated', 'Pending', 'New'];
+
+        const newLeads = [];
+        const businessTypeNames = businessTypes[selectedIndustry] || businessTypes['real-estate'];
+
+        for (let i = 0; i < 10; i++) {
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const businessType = businessTypeNames[Math.floor(Math.random() * businessTypeNames.length)];
+            const city = selectedCity || cities[Math.floor(Math.random() * cities.length)];
+            const source = sources[Math.floor(Math.random() * sources.length)];
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            
+            newLeads.push({
+                id: `lead_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+                businessName: `${businessType} ${lastName}`,
+                contactName: `${firstName} ${lastName}`,
+                phone: `+1 (555) ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+                email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${businessType.toLowerCase().replace(/\s+/g, '')}.com`,
+                location: `${city}, ${selectedState || 'CA'}`,
+                source: source,
+                status: status,
+                confidence: Math.floor(Math.random() * 20 + 80), // 80-99%
+                selected: false
+            });
+        }
+
+        return newLeads;
+    };
+
+    // Generate Leads page now persists data across refreshes
+    // Leads are removed only when deleted or validated (moved to All Leads)
+
+    const handleCollectLeads = async () => {
         setIsCollecting(true);
         setCollectionProgress(0);
 
+        try {
+            if (useRealData && apiConnected) {
+                // Use real lead generation API
+                await generateRealLeads();
+            } else {
+                // Use simulated lead generation
+                await generateSimulatedLeads();
+            }
+        } catch (error) {
+            console.error('Lead generation failed:', error);
+            setNotificationMessage(`Failed to generate leads: ${error.message}`);
+            setShowSuccessNotification(true);
+            setTimeout(() => setShowSuccessNotification(false), 3000);
+        } finally {
+            setIsCollecting(false);
+            setCollectionProgress(0);
+        }
+    };
+
+    const generateRealLeads = async () => {
+        try {
+            const criteria = {
+                industry: selectedIndustry,
+                city: selectedCity || undefined,
+                state: selectedState || undefined,
+                limit: 10
+            };
+
+            const response = await realLeadService.generateLeads(criteria);
+
+            if (response.success) {
+                const newLeads = response.leads.map(lead => ({
+                    ...lead,
+                    selected: false,
+                    dateAdded: new Date().toISOString()
+                }));
+
+                setLeads(prevLeads => [...prevLeads, ...newLeads]);
+                setNotificationMessage(`Successfully generated ${newLeads.length} real leads from ${response.sources.bySource ? Object.keys(response.sources.bySource).join(', ') : 'multiple sources'}!`);
+                setDeletedCount(newLeads.length);
+                setShowSuccessNotification(true);
+                setTimeout(() => setShowSuccessNotification(false), 3000);
+            } else {
+                throw new Error('Failed to generate real leads');
+            }
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const generateSimulatedLeads = async () => {
         // Simulate progress
         const interval = setInterval(() => {
             setCollectionProgress(prev => {
                 if (prev >= 100) {
                     clearInterval(interval);
                     setIsCollecting(false);
+                    
+                    // Generate 10 new leads
+                    const newLeads = generateNewLeads();
+                    setLeads(prevLeads => {
+                        const updatedLeads = [...prevLeads, ...newLeads];
+                        return updatedLeads;
+                    });
+                    
+                    // Show success notification
+                    setNotificationMessage(`Successfully generated ${newLeads.length} new leads!`);
+                    setDeletedCount(newLeads.length);
+                    setIsConfirmingDelete(false);
+                    setShowSuccessNotification(true);
+                    setTimeout(() => {
+                        setShowSuccessNotification(false);
+                        setNotificationMessage('');
+                        setDeletedCount(0);
+                    }, 3000);
+                    
                     return 100;
                 }
                 return prev + 10;
@@ -75,16 +211,147 @@ function LeadCollection() {
 
     const toggleSelectAll = () => {
         const allSelected = leads.every(lead => lead.selected);
-        setLeads(leads.map(lead => ({ ...lead, selected: !allSelected })));
+        const updatedLeads = leads.map(lead => ({ ...lead, selected: !allSelected }));
+        setLeads(updatedLeads);
     };
 
     const toggleSelectLead = (id) => {
-        setLeads(leads.map(lead =>
+        const updatedLeads = leads.map(lead =>
             lead.id === id ? { ...lead, selected: !lead.selected } : lead
-        ));
+        );
+        setLeads(updatedLeads);
     };
 
+    const handleValidateSelected = () => {
+        const selectedLeads = leads.filter(lead => lead.selected);
+        
+        if (selectedLeads.length === 0) {
+            setNotificationMessage('Please select at least one lead to validate.');
+            setDeletedCount(0);
+            setIsConfirmingDelete(false);
+            setShowSuccessNotification(true);
+            setTimeout(() => {
+                setShowSuccessNotification(false);
+                setNotificationMessage('');
+            }, 3000);
+            return;
+        }
+
+        // Update status of selected leads to 'Validated'
+        const validatedLeads = selectedLeads.map(lead => ({
+            ...lead,
+            status: 'Validated',
+            lastUpdated: new Date().toISOString(),
+            confidence: Math.min(lead.confidence + 10, 100), // Boost confidence after validation
+            selected: false // Reset selection
+        }));
+
+        // Get existing leads from All Leads storage
+        const existingAllLeads = JSON.parse(localStorage.getItem('alphaLeads_allLeads') || '[]');
+        
+        // Check for duplicates and add only new leads
+        const newLeads = validatedLeads.filter(validatedLead => 
+            !existingAllLeads.some(existingLead => 
+                existingLead.email === validatedLead.email && 
+                existingLead.phone === validatedLead.phone
+            )
+        );
+
+        // Update existing leads if they already exist
+        const updatedAllLeads = existingAllLeads.map(existingLead => {
+            const updatedLead = validatedLeads.find(validatedLead =>
+                existingLead.email === validatedLead.email && 
+                existingLead.phone === validatedLead.phone
+            );
+            return updatedLead ? updatedLead : existingLead;
+        });
+
+        // Add new leads
+        const finalAllLeads = [...updatedAllLeads, ...newLeads];
+        
+        // Save to All Leads storage
+        localStorage.setItem('alphaLeads_allLeads', JSON.stringify(finalAllLeads));
+        
+        // Remove validated leads from current collection (this moves them from generate leads list)
+        const remainingLeads = leads.filter(lead => !lead.selected);
+        setLeads(remainingLeads);
+        
+        // Show modern success notification
+        setNotificationMessage(`Successfully validated and moved ${selectedLeads.length} lead${selectedLeads.length > 1 ? 's' : ''} to All Leads section!`);
+        setDeletedCount(selectedLeads.length);
+        setIsConfirmingDelete(false);
+        setShowSuccessNotification(true);
+        setTimeout(() => {
+            setShowSuccessNotification(false);
+            setNotificationMessage('');
+            setDeletedCount(0);
+        }, 3000);
+    };
+
+    const handleDeleteSelected = () => {
+        const selectedLeads = leads.filter(lead => lead.selected);
+        
+        if (selectedLeads.length === 0) {
+            setNotificationMessage('Please select at least one lead to delete.');
+            setDeletedCount(0);
+            setIsConfirmingDelete(false);
+            setShowSuccessNotification(true);
+            setTimeout(() => {
+                setShowSuccessNotification(false);
+                setNotificationMessage('');
+            }, 3000);
+            return;
+        }
+
+        // Show confirmation notification instead of deleting immediately
+        setPendingDeleteLeads(selectedLeads);
+        setDeletedCount(selectedLeads.length);
+        setNotificationMessage(`Are you sure you want to delete ${selectedLeads.length} selected lead${selectedLeads.length > 1 ? 's' : ''}?`);
+        setIsConfirmingDelete(true);
+        setShowSuccessNotification(true);
+    };
+
+    const performDelete = (selectedLeads) => {
+        // Remove selected leads from current collection
+        const remainingLeads = leads.filter(lead => !lead.selected);
+        
+        // Update the state immediately
+        setLeads(remainingLeads);
+        
+        // Show modern success notification
+        setDeletedCount(selectedLeads.length);
+        setNotificationMessage(`Successfully deleted ${selectedLeads.length} lead${selectedLeads.length > 1 ? 's' : ''} from the collection.`);
+        setShowSuccessNotification(true);
+        
+        // Auto-hide notification after 3 seconds
+        setTimeout(() => {
+            setShowSuccessNotification(false);
+            setNotificationMessage('');
+            setDeletedCount(0);
+        }, 3000);
+    };
+
+
+
     const selectedCount = leads.filter(lead => lead.selected).length;
+
+    // Pagination logic
+    const totalPages = Math.ceil(leads.length / leadsPerPage);
+    const startIndex = (currentPage - 1) * leadsPerPage;
+    const endIndex = startIndex + leadsPerPage;
+    const currentLeads = leads.slice(startIndex, endIndex);
+
+    const goToPage = (page) => {
+        setCurrentPage(page);
+    };
+
+    const goToPrevious = () => {
+        setCurrentPage(prev => Math.max(prev - 1, 1));
+    };
+
+    const goToNext = () => {
+        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    };
 
     return (
         <div className="lead-collection">
@@ -92,9 +359,43 @@ function LeadCollection() {
             <div className="card filter-card">
                 <div className="card-header">
                     <h3 className="card-title">Lead Collection Filters</h3>
-                    <span className="badge badge-info">Auto-Scraping Enabled</span>
+                    <div className="header-badges">
+                        <span className={`badge ${apiConnected ? 'badge-success' : 'badge-warning'}`}>
+                            {apiConnected ? 'API Connected' : 'API Offline'}
+                        </span>
+                        <span className="badge badge-info">
+                            {useRealData ? 'Real Data Mode' : 'Demo Mode'}
+                        </span>
+                    </div>
                 </div>
                 <div className="card-body">
+                    {/* Data Source Toggle */}
+                    <div className="data-source-toggle">
+                        <label className="toggle-label">
+                            <span>Data Source:</span>
+                            <div className="toggle-switch">
+                                <input
+                                    type="checkbox"
+                                    checked={useRealData}
+                                    onChange={(e) => setUseRealData(e.target.checked)}
+                                    disabled={!apiConnected}
+                                />
+                                <span className="toggle-slider"></span>
+                            </div>
+                            <span>{useRealData ? 'Real APIs' : 'Simulated'}</span>
+                        </label>
+                        {!apiConnected && (
+                            <p className="api-notice">
+                                🆓 Free APIs available! Start backend server to use Yelp (5000 free leads/month) + OpenStreetMap (unlimited)
+                            </p>
+                        )}
+                        {apiConnected && (
+                            <p className="api-notice success">
+                                ✅ Free data sources ready! Toggle above to use real business data from Yelp & OpenStreetMap
+                            </p>
+                        )}
+                    </div>
+                    
                     <div className="filter-grid">
                         {/* Industry Selection */}
                         <div className="input-group">
@@ -266,15 +567,20 @@ function LeadCollection() {
                     {selectedCount > 0 && (
                         <div className="batch-actions">
                             <span className="selected-count">{selectedCount} selected</span>
-                            <button className="btn btn-success btn-sm">
+                            <button 
+                                className="btn btn-success btn-sm"
+                                onClick={handleValidateSelected}
+                                disabled={selectedCount === 0}
+                            >
                                 <span>✓</span>
                                 Validate Selected
                             </button>
-                            <button className="btn btn-primary btn-sm">
-                                <span>📞</span>
-                                Start Calling
-                            </button>
-                            <button className="btn btn-danger btn-sm">
+                            <button 
+                                className="btn btn-danger btn-sm"
+                                onClick={handleDeleteSelected}
+                                disabled={selectedCount === 0}
+                                title="Delete selected leads instantly"
+                            >
                                 <span>🗑️</span>
                                 Delete
                             </button>
@@ -305,52 +611,113 @@ function LeadCollection() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {leads.map((lead) => (
-                                    <tr key={lead.id}>
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={lead.selected}
-                                                onChange={() => toggleSelectLead(lead.id)}
-                                            />
-                                        </td>
-                                        <td className="font-semibold">{lead.businessName}</td>
-                                        <td>{lead.contactName}</td>
-                                        <td>{lead.phone}</td>
-                                        <td>{lead.email}</td>
-                                        <td>{lead.location}</td>
-                                        <td>
-                                            <span className="badge badge-info">{lead.source}</span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${lead.status === 'Validated' ? 'badge-success' : 'badge-warning'}`}>
-                                                {lead.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="confidence-indicator">
-                                                <div className="confidence-bar">
-                                                    <div
-                                                        className="confidence-fill"
-                                                        style={{ width: `${lead.confidence}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="confidence-text">{lead.confidence}%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <button className="btn-icon" title="View Details">👁️</button>
-                                                <button className="btn-icon" title="Edit">✏️</button>
-                                                <button className="btn-icon" title="Delete">🗑️</button>
+                                {currentLeads.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="10" style={{ textAlign: 'center', padding: '40px' }}>
+                                            <div style={{ color: 'var(--color-gray-500)' }}>
+                                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                                                <h3 style={{ margin: '0 0 8px 0', color: 'var(--color-gray-700)' }}>No Leads Generated</h3>
+                                                <p style={{ margin: 0 }}>Click "Collect & Validate Leads" to generate new leads</p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    currentLeads.map((lead) => (
+                                        <tr key={lead.id}>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={lead.selected}
+                                                    onChange={() => toggleSelectLead(lead.id)}
+                                                />
+                                            </td>
+                                            <td className="font-semibold">{lead.businessName}</td>
+                                            <td>{lead.contactName}</td>
+                                            <td>{lead.phone}</td>
+                                            <td>{lead.email}</td>
+                                            <td>{lead.location}</td>
+                                            <td>
+                                                <span className="badge badge-info">{lead.source}</span>
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${lead.status === 'Validated' ? 'badge-success' : 'badge-warning'}`}>
+                                                    {lead.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="confidence-indicator">
+                                                    <div className="confidence-bar">
+                                                        <div
+                                                            className="confidence-fill"
+                                                            style={{ width: `${lead.confidence}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="confidence-text">{lead.confidence}%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="action-buttons">
+                                                    <button className="btn-icon" title="View Details">👁️</button>
+                                                    <button className="btn-icon" title="Edit">✏️</button>
+                                                    <button className="btn-icon" title="Delete">🗑️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="pagination-container">
+                        <div className="pagination-info">
+                            <span>Showing {startIndex + 1} to {Math.min(endIndex, leads.length)} of {leads.length} leads</span>
+                        </div>
+                        <div className="pagination">
+                            <button 
+                                className="pagination-btn"
+                                onClick={goToPrevious}
+                                disabled={currentPage === 1}
+                            >
+                                ← Previous
+                            </button>
+                            
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+                                let pageNumber;
+                                if (totalPages <= 5) {
+                                    pageNumber = index + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNumber = index + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    pageNumber = totalPages - 4 + index;
+                                } else {
+                                    pageNumber = currentPage - 2 + index;
+                                }
+                                
+                                return (
+                                    <button
+                                        key={pageNumber}
+                                        className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
+                                        onClick={() => goToPage(pageNumber)}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                );
+                            })}
+                            
+                            <button 
+                                className="pagination-btn"
+                                onClick={goToNext}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next →
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Stats Summary */}
@@ -390,6 +757,91 @@ function LeadCollection() {
                     </div>
                 </div>
             </div>
+
+            {/* Modern Success/Confirmation Notification */}
+            {showSuccessNotification && (
+                <div className="notification-overlay">
+                    <div className="notification-popup success">
+                        <div className="notification-header">
+                            <div className="notification-icon">
+                                {isConfirmingDelete ? '❓' : (deletedCount > 0 ? '✅' : '⚠️')}
+                            </div>
+                            <h3 className="notification-title">
+                                {isConfirmingDelete ? 'Confirm Delete' : (deletedCount > 0 ? 'Success' : 'Notice')}
+                            </h3>
+                        </div>
+                        <div className="notification-body">
+                            <p className="notification-message">{notificationMessage}</p>
+                            {(deletedCount > 0 && !isConfirmingDelete) && (
+                                <div className="notification-details">
+                                    <span className="deleted-count">{deletedCount}</span>
+                                    <span className="deleted-label">
+                                        {notificationMessage.includes('generated') ? 'leads generated' : 
+                                         notificationMessage.includes('validated') ? 'leads validated' : 'leads removed'}
+                                    </span>
+                                </div>
+                            )}
+                            {isConfirmingDelete && (
+                                <div className="leads-to-delete">
+                                    {pendingDeleteLeads.slice(0, 3).map((lead, index) => (
+                                        <div key={lead.id} className="lead-item">
+                                            <span className="business-name">{lead.businessName}</span>
+                                            <span className="contact-name">{lead.contactName}</span>
+                                        </div>
+                                    ))}
+                                    {pendingDeleteLeads.length > 3 && (
+                                        <div className="more-leads">
+                                            +{pendingDeleteLeads.length - 3} more lead{pendingDeleteLeads.length - 3 > 1 ? 's' : ''}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <div className="notification-footer">
+                            {isConfirmingDelete ? (
+                                <>
+                                    <button 
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={() => {
+                                            setShowSuccessNotification(false);
+                                            setNotificationMessage('');
+                                            setDeletedCount(0);
+                                            setPendingDeleteLeads([]);
+                                            setIsConfirmingDelete(false);
+                                        }}
+                                        style={{ marginRight: '10px' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => {
+                                            // Actually perform the deletion
+                                            performDelete(pendingDeleteLeads);
+                                            setIsConfirmingDelete(false);
+                                            setPendingDeleteLeads([]);
+                                        }}
+                                    >
+                                        <span>🗑️</span>
+                                        Delete {pendingDeleteLeads.length} Lead{pendingDeleteLeads.length > 1 ? 's' : ''}
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => {
+                                        setShowSuccessNotification(false);
+                                        setNotificationMessage('');
+                                        setDeletedCount(0);
+                                    }}
+                                >
+                                    OK
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
