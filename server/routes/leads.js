@@ -26,6 +26,7 @@ const generateLeadsSchema = Joi.object({
     location: Joi.string().optional(),
     city: Joi.string().optional(),
     state: Joi.string().optional(),
+    country: Joi.string().optional().default('usa'),
     businessType: Joi.string().optional(),
     limit: Joi.number().min(1).max(100).default(50)
 });

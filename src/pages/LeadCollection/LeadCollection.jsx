@@ -18,9 +18,21 @@ function LeadCollection() {
     const [leadsPerPage] = useState(30);
     const [useRealData, setUseRealData] = useState(false);
     const [apiConnected, setApiConnected] = useState(false);
+    const [currentStage, setCurrentStage] = useState(''); // 'searching', 'validating', 'processing'
 
     // Initialize real lead service
     const realLeadService = new RealLeadService();
+    
+    // Get stage status for timeline
+    const getStageStatus = (stageName) => {
+        const stages = ['searching', 'validating', 'processing'];
+        const currentIndex = stages.indexOf(currentStage);
+        const stageIndex = stages.indexOf(stageName);
+        
+        if (stageIndex < currentIndex) return 'completed';
+        if (stageIndex === currentIndex) return 'active';
+        return 'pending';
+    };
 
     // Load leads from localStorage on component mount
     const [leads, setLeads] = useState(() => {
@@ -85,33 +97,58 @@ function LeadCollection() {
             'property-management': ['Property Management', 'Rental Services', 'Property Care', 'Management Group']
         };
 
-        const firstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'Robert', 'Jennifer', 'William', 'Amanda'];
-        const lastNames = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez'];
-        const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
-        const sources = ['Google Places', 'Yellow Pages', 'LinkedIn', 'Company Website', 'Business Directory'];
+        // Country-specific data
+        const countryData = {
+            'bangladesh': {
+                firstNames: ['Mohammad', 'Abdul', 'Rahim', 'Karim', 'Fatima', 'Ayesha', 'Nasrin', 'Rashed', 'Shakib', 'Tamim'],
+                lastNames: ['Rahman', 'Ahmed', 'Khan', 'Islam', 'Hossain', 'Ali', 'Uddin', 'Chowdhury', 'Alam', 'Hassan'],
+                cities: ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barisal', 'Rangpur', 'Mymensingh', 'Gazipur', 'Narayanganj'],
+                phonePrefix: '+880',
+                phoneFormat: () => `+880 1${Math.floor(Math.random() * 9 + 1)}${Math.floor(Math.random() * 90000000 + 10000000)}`,
+                sources: ['Google Maps', 'Bangladesh Trade Directory', 'Local Business Registry', 'Facebook Business', 'Yellow Pages BD']
+            },
+            'usa': {
+                firstNames: ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'Robert', 'Jennifer', 'William', 'Amanda'],
+                lastNames: ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez'],
+                cities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'],
+                phonePrefix: '+1',
+                phoneFormat: () => `+1 (555) ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+                sources: ['Google Places', 'Yellow Pages', 'LinkedIn', 'Company Website', 'Business Directory']
+            },
+            'uk': {
+                firstNames: ['James', 'Oliver', 'Emma', 'Charlotte', 'George', 'Sophie', 'William', 'Amelia', 'Harry', 'Emily'],
+                lastNames: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Wilson', 'Taylor', 'Anderson'],
+                cities: ['London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Liverpool', 'Newcastle', 'Sheffield', 'Bristol', 'Edinburgh'],
+                phonePrefix: '+44',
+                phoneFormat: () => `+44 20 ${Math.floor(Math.random() * 9000 + 1000)} ${Math.floor(Math.random() * 9000 + 1000)}`,
+                sources: ['Google Maps', 'UK Business Directory', 'Companies House', 'Yell.com', 'Thomson Local']
+            }
+        };
+
+        const data = countryData[selectedCountry] || countryData['usa'];
         const statuses = ['Validated', 'Pending', 'New'];
 
         const newLeads = [];
         const businessTypeNames = businessTypes[selectedIndustry] || businessTypes['real-estate'];
 
         for (let i = 0; i < 10; i++) {
-            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const firstName = data.firstNames[Math.floor(Math.random() * data.firstNames.length)];
+            const lastName = data.lastNames[Math.floor(Math.random() * data.lastNames.length)];
             const businessType = businessTypeNames[Math.floor(Math.random() * businessTypeNames.length)];
-            const city = selectedCity || cities[Math.floor(Math.random() * cities.length)];
-            const source = sources[Math.floor(Math.random() * sources.length)];
+            const city = selectedCity || data.cities[Math.floor(Math.random() * data.cities.length)];
+            const source = data.sources[Math.floor(Math.random() * data.sources.length)];
             const status = statuses[Math.floor(Math.random() * statuses.length)];
             
             newLeads.push({
-                id: `lead_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+                id: `lead_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`,
                 businessName: `${businessType} ${lastName}`,
                 contactName: `${firstName} ${lastName}`,
-                phone: `+1 (555) ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+                phone: data.phoneFormat(),
                 email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${businessType.toLowerCase().replace(/\s+/g, '')}.com`,
-                location: `${city}, ${selectedState || 'CA'}`,
+                location: `${city}, ${selectedState || selectedCountry.toUpperCase()}`,
                 source: source,
                 status: status,
-                confidence: Math.floor(Math.random() * 20 + 80), // 80-99%
+                confidence: Math.floor(Math.random() * 20 + 80),
                 selected: false
             });
         }
@@ -138,51 +175,95 @@ function LeadCollection() {
             console.error('Lead generation failed:', error);
             setNotificationMessage(`Failed to generate leads: ${error.message}`);
             setShowSuccessNotification(true);
-            setTimeout(() => setShowSuccessNotification(false), 3000);
-        } finally {
             setIsCollecting(false);
-            setCollectionProgress(0);
+            setCurrentStage('');
+            setTimeout(() => setShowSuccessNotification(false), 3000);
         }
     };
 
     const generateRealLeads = async () => {
-        try {
-            const criteria = {
+        let progress = 0;
+        setCollectionProgress(0);
+        setCurrentStage('searching');
+        
+        return new Promise((resolve, reject) => {
+            // Animate progress bar while waiting for API
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 10) + 5; // Increment by 5-15%
+                
+                // Update timeline stages based on progress
+                if (progress >= 35 && progress < 70) {
+                    setCurrentStage('validating');
+                } else if (progress >= 70) {
+                    setCurrentStage('processing');
+                }
+                
+                if (progress >= 90) progress = 90; // Cap at 90% until API returns
+                setCollectionProgress(progress);
+            }, 400);
+            
+            realLeadService.generateLeads({
                 industry: selectedIndustry,
                 city: selectedCity || undefined,
                 state: selectedState || undefined,
+                country: selectedCountry || 'usa',
                 limit: 10
-            };
+            }).then((response) => {
+                clearInterval(interval);
+                setCollectionProgress(100);
+                setCurrentStage('processing'); // Ensure we're at processing stage
 
-            const response = await realLeadService.generateLeads(criteria);
+                if (response.success) {
+                    const newLeads = response.leads.map(lead => ({
+                        ...lead,
+                        selected: false,
+                        dateAdded: new Date().toISOString()
+                    }));
 
-            if (response.success) {
-                const newLeads = response.leads.map(lead => ({
-                    ...lead,
-                    selected: false,
-                    dateAdded: new Date().toISOString()
-                }));
-
-                setLeads(prevLeads => [...prevLeads, ...newLeads]);
-                setNotificationMessage(`Successfully generated ${newLeads.length} real leads from ${response.sources.bySource ? Object.keys(response.sources.bySource).join(', ') : 'multiple sources'}!`);
-                setDeletedCount(newLeads.length);
-                setShowSuccessNotification(true);
-                setTimeout(() => setShowSuccessNotification(false), 3000);
-            } else {
-                throw new Error('Failed to generate real leads');
-            }
-        } catch (error) {
-            throw error;
-        }
+                    setLeads(prevLeads => [...prevLeads, ...newLeads]);
+                    setNotificationMessage(`Successfully generated ${newLeads.length} real leads from ${response.sources.bySource ? Object.keys(response.sources.bySource).join(', ') : 'multiple sources'}!`);
+                    setDeletedCount(newLeads.length);
+                    setShowSuccessNotification(true);
+                    
+                    setTimeout(() => {
+                        setShowSuccessNotification(false);
+                        setIsCollecting(false);
+                        setCurrentStage('');
+                        resolve();
+                    }, 3000);
+                } else {
+                    throw new Error('Failed to generate real leads');
+                }
+            }).catch((error) => {
+                clearInterval(interval);
+                setCollectionProgress(0);
+                setIsCollecting(false);
+                setCurrentStage('');
+                reject(error);
+            });
+        });
     };
 
     const generateSimulatedLeads = async () => {
         // Simulate progress
-        const interval = setInterval(() => {
-            setCollectionProgress(prev => {
-                if (prev >= 100) {
+        return new Promise((resolve) => {
+            setCurrentStage('searching');
+            let currentProgress = 0;
+            
+            const interval = setInterval(() => {
+                currentProgress += 10;
+                
+                // Update stage based on progress
+                if (currentProgress >= 35 && currentProgress < 70) {
+                    setCurrentStage('validating');
+                } else if (currentProgress >= 70 && currentProgress < 100) {
+                    setCurrentStage('processing');
+                }
+                
+                setCollectionProgress(currentProgress);
+                
+                if (currentProgress >= 100) {
                     clearInterval(interval);
-                    setIsCollecting(false);
                     
                     // Generate 10 new leads
                     const newLeads = generateNewLeads();
@@ -196,17 +277,19 @@ function LeadCollection() {
                     setDeletedCount(newLeads.length);
                     setIsConfirmingDelete(false);
                     setShowSuccessNotification(true);
+                    
+                    // Resolve the promise after showing notification
                     setTimeout(() => {
                         setShowSuccessNotification(false);
                         setNotificationMessage('');
                         setDeletedCount(0);
+                        setIsCollecting(false);
+                        setCurrentStage('');
+                        resolve();
                     }, 3000);
-                    
-                    return 100;
                 }
-                return prev + 10;
-            });
-        }, 500);
+            }, 500);
+        });
     };
 
     const toggleSelectAll = () => {
@@ -359,41 +442,14 @@ function LeadCollection() {
             <div className="card filter-card">
                 <div className="card-header">
                     <h3 className="card-title">Lead Collection Filters</h3>
-                    <div className="header-badges">
-                        <span className={`badge ${apiConnected ? 'badge-success' : 'badge-warning'}`}>
-                            {apiConnected ? 'API Connected' : 'API Offline'}
-                        </span>
-                        <span className="badge badge-info">
-                            {useRealData ? 'Real Data Mode' : 'Demo Mode'}
-                        </span>
-                    </div>
                 </div>
                 <div className="card-body">
-                    {/* Data Source Toggle */}
+                    {/* Data Source Display */}
                     <div className="data-source-toggle">
                         <label className="toggle-label">
                             <span>Data Source:</span>
-                            <div className="toggle-switch">
-                                <input
-                                    type="checkbox"
-                                    checked={useRealData}
-                                    onChange={(e) => setUseRealData(e.target.checked)}
-                                    disabled={!apiConnected}
-                                />
-                                <span className="toggle-slider"></span>
-                            </div>
-                            <span>{useRealData ? 'Real APIs' : 'Simulated'}</span>
+                            <span className="data-source-mode">Free Data (OpenStreetMap, Government Registries)</span>
                         </label>
-                        {!apiConnected && (
-                            <p className="api-notice">
-                                🆓 Free APIs available! Start backend server to use Yelp (5000 free leads/month) + OpenStreetMap (unlimited)
-                            </p>
-                        )}
-                        {apiConnected && (
-                            <p className="api-notice success">
-                                ✅ Free data sources ready! Toggle above to use real business data from Yelp & OpenStreetMap
-                            </p>
-                        )}
                     </div>
                     
                     <div className="filter-grid">
@@ -551,6 +607,22 @@ function LeadCollection() {
                             </div>
                             <div className="progress-text">
                                 Collecting leads... {collectionProgress}%
+                            </div>
+                            
+                            {/* Loading Timeline */}
+                            <div className="progress-timeline">
+                                <div className={`timeline-stage ${getStageStatus('searching')}`}>
+                                    <div className="timeline-dot">🔍</div>
+                                    <div className="timeline-label">Searching</div>
+                                </div>
+                                <div className={`timeline-stage ${getStageStatus('validating')}`}>
+                                    <div className="timeline-dot">✓</div>
+                                    <div className="timeline-label">Validating</div>
+                                </div>
+                                <div className={`timeline-stage ${getStageStatus('processing')}`}>
+                                    <div className="timeline-dot">⚙️</div>
+                                    <div className="timeline-label">Processing</div>
+                                </div>
                             </div>
                         </div>
                     )}

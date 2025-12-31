@@ -12,9 +12,7 @@ class GovernmentDataService {
         try {
             // Try multiple government data sources
             const sources = await Promise.allSettled([
-                this.searchSECFilings(industry, state, limit),
-                this.searchStateBusinessRegistry(state, industry, limit),
-                this.searchChamberOfCommerce(city, state, industry, limit)
+                this.searchSECFilings(industry, state, limit)
             ]);
 
             sources.forEach((result, index) => {
@@ -55,59 +53,13 @@ class GovernmentDataService {
     }
 
     async searchStateBusinessRegistry(state, industry, limit) {
-        // This would integrate with state-specific business registries
-        // For demo purposes, returning sample format
-        try {
-            const sampleBusinesses = [
-                {
-                    name: `${state} Construction LLC`,
-                    address: `123 Main St, ${state}`,
-                    industry: industry,
-                    registrationNumber: 'REG' + Math.random().toString(36).substr(2, 9)
-                },
-                {
-                    name: `${state} Real Estate Group`,
-                    address: `456 Business Ave, ${state}`,
-                    industry: industry,
-                    registrationNumber: 'REG' + Math.random().toString(36).substr(2, 9)
-                }
-            ].map(business => this.formatStateRegistryBusiness(business, industry));
-
-            return sampleBusinesses.slice(0, limit);
-
-        } catch (error) {
-            console.error('State registry error:', error);
-            return [];
-        }
+        // State business registries not implemented; avoid synthetic data
+        return [];
     }
 
     async searchChamberOfCommerce(city, state, industry, limit) {
-        // Chamber of Commerce business directories
-        try {
-            const location = city && state ? `${city}, ${state}` : state;
-            
-            // Sample chamber data (in production, this would scrape actual chamber websites)
-            const chamberBusinesses = [
-                {
-                    name: `${city || state} Professional Services`,
-                    memberSince: '2020',
-                    category: industry,
-                    location: location
-                },
-                {
-                    name: `Local ${industry.replace('-', ' ')} Company`,
-                    memberSince: '2019',
-                    category: industry,
-                    location: location
-                }
-            ].map(business => this.formatChamberBusiness(business, industry));
-
-            return chamberBusinesses.slice(0, limit);
-
-        } catch (error) {
-            console.error('Chamber of Commerce error:', error);
-            return [];
-        }
+        // Chamber of Commerce scraping not implemented; avoid synthetic data
+        return [];
     }
 
     formatSECCompany(company, industry) {

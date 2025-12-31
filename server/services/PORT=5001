@@ -1,0 +1,4 @@
+PORT=5001
+YELP_API_KEY=your_yelp_key        # free tier, required for Yelp leads
+HUNTER_IO_API_KEY=your_hunter_key # optional
+CLEARBIT_API_KEY=your_clearbit_key# optional

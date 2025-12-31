@@ -2,6 +2,11 @@
 
 A comprehensive SaaS platform for automated lead generation and AI-powered cold calling specifically designed for real estate and other industries.
 
+## Data authenticity
+- Lead generation now returns only real data from external sources (Yelp, Google Maps, OpenStreetMap, SEC) when configured.
+- If no sources return results, the API responds with an empty list rather than synthetic/sample leads.
+- Configure `YELP_API_KEY`, `GOOGLE_MAPS_API_KEY`, and other keys for best coverage.
+
 ![Platform Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![React](https://img.shields.io/badge/React-18.x-61dafb)
 ![Vite](https://img.shields.io/badge/Vite-7.x-646cff)
